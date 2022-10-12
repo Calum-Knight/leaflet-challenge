@@ -5,8 +5,8 @@ d3.json(queryUrl).then(function (data) {
     console.log(data.features);
 
     var myMap = L.map("map", {
-        center: [30.52, 0.00],
-        zoom: 2
+        center: [50.52, -122.00],
+        zoom: 4
     });
 
 
@@ -15,7 +15,13 @@ d3.json(queryUrl).then(function (data) {
 
 
     list_depths = []
+
+
+
+    EQMarkers = []
+
     for (var i = 0; i < earthquakes.length; i++) {
+
 
         var lat = earthquakes[i]["geometry"]["coordinates"][1]
         var lng = earthquakes[i]["geometry"]["coordinates"][0]
@@ -26,43 +32,78 @@ d3.json(queryUrl).then(function (data) {
         list_depths.push(depth)
 
         function markerColor(depth) {
-            if (depth > 90) {
-                return "#131a05";
-            } else if (depth > 80) {
-                return "#26340b";
-            } else if (depth > 70) {
-                return "#3a4e11";
-            } else if (depth > 60) {
-                return "#4d6817";
-            } else if (depth > 60) {
-                return "#60821d";
-            } else if (depth > 40) {
-                return "#749c23";
-            } else if (depth > 30) {
-                return "#87b629";
+            if (depth > 500) {
+                return "#3f007d";
+            } else if (depth > 200) {
+                return "#54278f";
+            } else if (depth > 100) {
+                return "#6a51a3";
+            } else if (depth > 50) {
+                return "#807dba";
+
+                // } else if (depth > 50) {
+                //     return "#60821d";
             } else if (depth > 20) {
-                return "#9ad02f";
+                return "#9e9ac8";
+                // } else if (depth > 30) {
+                //     return "#87b629";
             } else if (depth > 10) {
-                return "#aeea35";
+                return "#bcbddc";
+                // } else if (depth > 10) {
+                //     return "#aeea35";
             } else {
-                return "#c8f76a"
+                return "#dadaeb"
             }
         }
 
 
-        var circle = L.circle([lat, lng], {
+        EQMarkers.push(L.circle([lat, lng], {
             radius: mag,
             fillColor: markerColor(depth),
             color: markerColor(depth),
-            fillOpacity: 0.5,
-        }).addTo(myMap);
-
-        circle.bindPopup(properties.place);
+            fillOpacity: 0.75
+        }).bindPopup("<h2>" + properties.place + "</h2> <hr> <h4><ul> <li> Type: " + properties.type + "</li> <li> Magnitude: " + properties.mag + "</li> </ul></h4>"));
     }
-    console.log(list_depths)
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+
+    EQLayer = L.layerGroup(EQMarkers).addTo(myMap);
+
+    var street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(myMap);
 
-});
+    var topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+    });
+
+    var baseMaps = {
+        Street: street,
+        Topography: topo
+    };
+
+
+    var legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (myMap) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+            grades = [0, 10, 20, 50, 100, 200, 500],
+            colors = ["#dadaeb", "#bcbddc", "#9e9ac8", "#807dba", "#6a51a3", "#54278f", "#3f007d"];
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + colors[i] + '"></i> ' +
+                grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        }
+
+        return div;
+    };
+
+    legend.addTo(myMap);
+
+    L.control.layers(baseMaps).addTo(myMap);
+})
+
+
